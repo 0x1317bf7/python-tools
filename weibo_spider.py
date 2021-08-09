@@ -107,8 +107,6 @@ def get_information(count):
         created_at = mblog.get("created_at")
         
         print_log("正在获取" + created_at + "的微博")
-
-        print(str(changed) + "..." + str(total) + "..." + str(finished))
         
         time_array = time.strptime(created_at,"%a %b %d %H:%M:%S %z %Y")
 
@@ -192,11 +190,11 @@ def main(name, path = ""):
     temp_create_time = prev_create_time
     try:
         count = 1
-        temp = get_information(count)
-        temp_create_time = max(prev_create_time, temp[1])
+        temp_create_time = get_information(count)
+        temp_create_time = max(prev_create_time, temp_create_time)
         while True:
             count += 1
-            temp = get_information(count)
+            get_information(count)
     except FinishException:
         print_log(str(uid) + "(" + name + ")的微博获取完毕,最新的微博更新时间为:" + str(temp_create_time))
         config = open(root_path + "/" + "config.txt", "w+")
