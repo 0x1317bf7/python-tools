@@ -1,6 +1,4 @@
-﻿# 根据微博用户名称获取该用户的所有图片和视频
-
-from urllib.parse import urlencode
+﻿from urllib.parse import urlencode
 from pyquery import PyQuery as py
 from bs4 import BeautifulSoup
 import requests
@@ -25,7 +23,6 @@ global prev_create_time
 global root_path
 global log
 global config
-
 
 def get_HTML_text(url):
     try:
@@ -73,7 +70,7 @@ def get_json_text(url):
         time.sleep(10)
 
 
-def get_information(since_id = ""):
+def get_information(count):
     global prev_create_time
     global uid
 
@@ -81,33 +78,38 @@ def get_information(since_id = ""):
 
     params = {
         "uid": uid,
+        "t": 0,
         "luicode": 10000011,
-        "lfid": "231093_-_selffollowed",
+        "lfid": "100103",
         "type": int(uid),
-        "value": 5768045317,
+        "value": int(uid),
         "containerid": '107603' + str(uid),
-        "since_id": since_id
+        "page": count
     }
 
     url = "https://m.weibo.cn/api/container/getIndex?" + urlencode(params)
     json_text = get_json_text(url)
-    since_id = json_text.get("data").get("cardlistInfo").get("since_id")
     
     items = json_text.get("data").get("cards")
 
     changed = 0
     total = len(items)
 
+    finished = 0
+
     for item in items:
+        #print(item)
         if item.get("card_type") != 9:
             total -= 1
             continue
         mblog = item.get("mblog")
         
         created_at = mblog.get("created_at")
-
+        
         print_log("正在获取" + created_at + "的微博")
 
+        print(str(changed) + "..." + str(total) + "..." + str(finished))
+        
         time_array = time.strptime(created_at,"%a %b %d %H:%M:%S %z %Y")
 
         create_time = int(time.mktime(time_array))
@@ -115,7 +117,9 @@ def get_information(since_id = ""):
         temp_create_time = max(temp_create_time, create_time)
 
         if create_time <= prev_create_time:
-            raise FinishException()
+            finished += 1
+            if finished >= 2:
+                raise FinishException()
 
         file_path = root_path + "/" + time.strftime("%Y年%m月%d日 %H时%M分%S秒", time_array)
 
@@ -130,6 +134,7 @@ def get_information(since_id = ""):
             except Exception:
                 total -= 1
             continue
+            
 
         if not create_folder(file_path):
             continue
@@ -153,9 +158,9 @@ def get_information(since_id = ""):
 
     if changed == 0 and total != 0:
         raise FinishException()
-    return since_id,temp_create_time
+    return temp_create_time
 
-def main(name):
+def main(name, path = ""):
     
     global uid
     global prev_create_time
@@ -164,7 +169,7 @@ def main(name):
     global log
     global config
     
-    root_path = name
+    root_path = path + name
 
     uid = int(get_uid(name))
 
@@ -176,7 +181,7 @@ def main(name):
     except Exception:
         pass
 
-    print_log("将uid设置为" + root_path + "(" + name + ")")
+    print_log("将uid设置为" + str(uid) + "(" + name + ")")
 
     try:
         config = open(root_path + "/" + "config.txt", "r")
@@ -186,13 +191,14 @@ def main(name):
     
     temp_create_time = prev_create_time
     try:
-        temp = get_information(since_id = '')
-        since_id = temp[0]
+        count = 1
+        temp = get_information(count)
         temp_create_time = max(prev_create_time, temp[1])
         while True:
-            since_id = get_information(since_id = since_id)[0]
+            count += 1
+            temp = get_information(count)
     except FinishException:
-        print_log(root_path + "(" + name + ")的微博获取完毕,最新的微博更新时间为:" + str(temp_create_time))
+        print_log(str(uid) + "(" + name + ")的微博获取完毕,最新的微博更新时间为:" + str(temp_create_time))
         config = open(root_path + "/" + "config.txt", "w+")
         config.write(str(temp_create_time))
 
