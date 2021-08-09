@@ -63,9 +63,13 @@ def create_folder(path):
 def get_json_text(url):
     for i in range(10):
         response = requests.get(url = url, headers = headers)
-        json_text = response.json()
-        if json_text != None:
-            return json_text
+        if response != None:
+            json_text = response.json()
+            if json_text != None:
+                if str(json_text) == "{'ok': 0, 'msg': '这里还没有内容', 'data': {'cards': []}}":
+                    raise FinishException()
+                else:
+                    return json_text
         print_log("在获取" + url + "时出现错误,将在10秒后重试")
         time.sleep(10)
 
@@ -88,6 +92,7 @@ def get_information(count):
     }
 
     url = "https://m.weibo.cn/api/container/getIndex?" + urlencode(params)
+
     json_text = get_json_text(url)
     
     items = json_text.get("data").get("cards")
@@ -98,6 +103,7 @@ def get_information(count):
     finished = 0
 
     for item in items:
+        time.sleep(1)
         #print(item)
         if item.get("card_type") != 9:
             total -= 1
@@ -196,6 +202,7 @@ def main(name, path = ""):
             count += 1
             get_information(count)
     except FinishException:
+        temp_create_time = max(prev_create_time, temp_create_time)
         print_log(str(uid) + "(" + name + ")的微博获取完毕,最新的微博更新时间为:" + str(temp_create_time))
         config = open(root_path + "/" + "config.txt", "w+")
         config.write(str(temp_create_time))
