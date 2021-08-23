@@ -1,5 +1,3 @@
-#批量修改文件后缀名
-
 import os
 
 def rename(path, old, new, rec = False):
@@ -11,7 +9,7 @@ def rename(path, old, new, rec = False):
                 print("将" + file + "重命名")
                 os.rename(p, p[0:-len(old)] + new)
         elif rec and os.path.isdir(p):
-            rename(p)
+            rename(p, old, new, rec)
 
 def main():
     path = input("请输入文件夹路径")
